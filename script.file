@@ -1,0 +1,82 @@
+# 1. Import necessary libraries
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.linear_model import LogisticRegression
+from sklearn.metrics import confusion_matrix, precision_score, recall_score, roc_auc_score, roc_curve
+import matplotlib.pyplot as plt
+from sklearn.datasets import load_breast_cancer
+
+# 2. Load the dataset
+# The task suggests the Breast Cancer Wisconsin Dataset. We can load it from scikit-learn.
+cancer = load_breast_cancer()
+X = pd.DataFrame(cancer.data, columns=cancer.feature_names)
+y = pd.Series(cancer.target)
+
+# 3. Train/Test Split
+# Split the data into training (80%) and testing (20%) sets.
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42, stratify=y)
+
+# 4. Standardize Features
+# Scale the features to have zero mean and unit variance.
+scaler = StandardScaler()
+X_train_scaled = scaler.fit_transform(X_train)
+X_test_scaled = scaler.transform(X_test)
+
+# 5. Fit a Logistic Regression Model
+# Initialize and train the model.
+model = LogisticRegression(random_state=42)
+model.fit(X_train_scaled, y_train)
+
+# 6. Make Predictions
+y_pred = model.predict(X_test_scaled)
+y_pred_proba = model.predict_proba(X_test_scaled)[:, 1] # Probabilities for the positive class
+
+# 7. Evaluate the Model
+# Confusion Matrix
+conf_matrix = confusion_matrix(y_test, y_pred)
+print("Confusion Matrix:\n", conf_matrix)
+
+# Precision and Recall
+precision = precision_score(y_test, y_pred)
+recall = recall_score(y_test, y_pred)
+print(f"\nPrecision: {precision:.4f}")
+print(f"Recall: {recall:.4f}")
+
+# ROC-AUC Score
+roc_auc = roc_auc_score(y_test, y_pred_proba)
+print(f"ROC-AUC Score: {roc_auc:.4f}")
+
+# Plot ROC Curve
+fpr, tpr, thresholds = roc_curve(y_test, y_pred_proba)
+plt.figure(figsize=(8, 6))
+plt.plot(fpr, tpr, color='blue', lw=2, label=f'ROC curve (area = {roc_auc:.2f})')
+plt.plot([0, 1], [0, 1], color='gray', lw=2, linestyle='--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver Operating Characteristic (ROC) Curve')
+plt.legend(loc="lower right")
+plt.show()
+
+# 8. Tune Threshold and Explain Sigmoid Function
+# The sigmoid function is inherently used by LogisticRegression to map outputs to a probability.
+# We can tune the classification threshold from the default of 0.5.
+print("\n--- Threshold Tuning ---")
+print("Default threshold: 0.5")
+
+# Example: Increase threshold to 0.7 for higher precision
+threshold_high = 0.7
+y_pred_high_precision = (y_pred_proba >= threshold_high).astype(int)
+print(f"\nMetrics with threshold = {threshold_high}:")
+print(f"Precision: {precision_score(y_test, y_pred_high_precision):.4f}")
+print(f"Recall: {recall_score(y_test, y_pred_high_precision):.4f}")
+
+# Example: Decrease threshold to 0.3 for higher recall
+threshold_low = 0.3
+y_pred_high_recall = (y_pred_proba >= threshold_low).astype(int)
+print(f"\nMetrics with threshold = {threshold_low}:")
+print(f"Precision: {precision_score(y_test, y_pred_high_recall):.4f}")
+print(f"Recall: {recall_score(y_test, y_pred_high_recall):.4f}")
+
